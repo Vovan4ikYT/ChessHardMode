@@ -3,8 +3,8 @@ from pygame import mixer
 from random import choice
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton
-from PyQt5.QtCore import QRect
-from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtCore import QRect, QTimer
+from PyQt5.QtGui import QPixmap, QIcon, QMovie
 
 mixer.init()
 
@@ -14,8 +14,14 @@ class ChessHardGame(QMainWindow):
         super().__init__()
         board_label = QLabel(self)
         board_label.resize(800, 800)
-        board = QPixmap('board.png')
-        board_label.setPixmap(board)
+        with open('game_info.txt', 'r') as f:
+            lines = f.readlines()
+            if 'BLACKOUT\n' in lines:
+                board = QPixmap('board_blackout.png')
+                board_label.setPixmap(board)
+            else:
+                board = QPixmap('board.png')
+                board_label.setPixmap(board)
         gui_label = QLabel(self)
         gui_label.resize(800, 300)
         gui_label.move(0, 800)
@@ -36,12 +42,13 @@ class ChessHardGame(QMainWindow):
 
         self.count = 0
 
+        self.death_label = QLabel(self)
+        self.death_label.resize(800, 800)
 
         class Figure(QLabel):
             def __init__(self):
                 super().__init__(board_label)
                 self.resize(100, 100)
-
 
         self.figures, self.chars = ([[Figure(), Figure(), Figure(), Figure(), Figure(), Figure(), Figure(), Figure()],
                                     [Figure(), Figure(), Figure(), Figure(), Figure(), Figure(), Figure(), Figure()],
@@ -113,6 +120,17 @@ class ChessHardGame(QMainWindow):
         for j in self.chars:
             print(j)
 
+    def die_already(self, death):
+        self.death_label.setMovie(death)
+        self.death_label.move(0, 0)
+        death.start()
+        self.death_label.show()
+        timer = QTimer()
+        timer.singleShot(1400, self.death_label.hide)
+
+        mixer.music.load('death.mp3')
+        mixer.music.play(loops=1)
+
     def mousePressEvent(self, event):
         if self.count == 0:
             self.count += 1
@@ -129,75 +147,137 @@ class ChessHardGame(QMainWindow):
 
     def pawn_move(self, color):
         if color == 'white':
-            current = self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100]
-            if self.figures[self.first_coordinates[1] // 100 - 1][self.first_coordinates[0] // 100] == ' ':
-                if self.first_coordinates[1] - self.second_coordinates[1] == 100:
-                    current.move(self.second_coordinates[0], self.second_coordinates[1])
-                    self.chars[self.first_coordinates[1] // 100 - 1][self.first_coordinates[0] // 100] = 'WP'
-                    self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
-                    self.figures[self.first_coordinates[1] // 100 - 1][self.first_coordinates[0] // 100] = current
-                    self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
-            elif ((self.first_coordinates[1] - self.second_coordinates[1] == 100 and
-                  self.first_coordinates[0] - self.second_coordinates[0] == 100) or
-                  (self.second_coordinates[1] - self.first_coordinates[1] == 100 and
-                  self.second_coordinates[0] - self.first_coordinates[0] == 100)):
-                self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = 'WP'
-                self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
-                self.figures[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = current
+            if (self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] == ' ' and
+                    self.second_coordinates[1] - self.first_coordinates[1] == -100 and
+                    abs(self.second_coordinates[0] - self.first_coordinates[0]) != 100):
+                self.figures[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = (
+                    self.figures)[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100]
+                self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100].move(
+                    self.second_coordinates[0], self.second_coordinates[1])
                 self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
-                current.move(self.second_coordinates[0], self.second_coordinates[1])
+                self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
+                self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = 'WP'
+            elif (self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] != ' ' and
+                  abs(self.second_coordinates[0] - self.first_coordinates[0]) == 100):
+                      self.figures[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100].hide()
+                      self.figures[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = (
+                          self.figures)[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100]
+                      self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100].move(
+                          self.second_coordinates[0], self.second_coordinates[1])
+                      self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
+                      self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
+                      self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = 'WP'
+                      self.die_already(QMovie('deaths/pawn_death.gif'))
         elif color == 'black':
-            y = 400
-            position = (choice([0, 100, 200, 300, 400, 500, 600, 700]), self.second_coordinates[1] - y)
-            current = self.figures[position[1] // 100][position[0] // 100]
+            position = (choice([0, 100, 200, 300, 400, 500, 600, 700]), choice([0, 100, 200, 300, 400, 500, 600, 700]))
             while True:
-                    try:
-                        while self.figures[position[1] // 100 + 1][position[0] // 100] != ' ':
-                            position = (choice([0, 100, 200, 300, 400, 500, 600, 700]),
-                                        choice([0, 100, 200, 300, 400, 500, 600, 700]))
-                            current = self.figures[position[1] // 100][position[0] // 100]
-                        if (self.figures[position[1] // 100 + 1][position[0] // 100] == ' '
-                                and self.chars[position[1] // 100][position[0] // 100] == 'BP'):
-                            current.move(position[0], position[1] + 100)
-                            self.chars[position[1] // 100 + 1][position[0] // 100] = 'BP'
-                            self.chars[position[1] // 100][position[0] // 100] = ' '
-                            self.figures[position[1] // 100 + 1][position[0] // 100] = current
-                            self.figures[position[1] // 100][position[0] // 100] = ' '
+                try:
+                    if (self.chars[position[1] // 100 + 1][position[0] // 100] == ' ' and
+                            self.chars[position[1] // 100][position[0] // 100] == 'BP'):
+                        self.figures[position[1] // 100 + 1][position[0] // 100] = (
+                            self.figures)[position[1] // 100][position[0] // 100]
+                        self.figures[position[1] // 100][position[0] // 100].move(
+                            position[0], position[1] + 100)
+                        self.figures[position[1] // 100][position[0] // 100] = ' '
+                        self.chars[position[1] // 100][position[0] // 100] = ' '
+                        self.chars[position[1] // 100 + 1][position[0] // 100] = 'BP'
+                        break
+                    elif (self.chars[position[1] // 100 + 1][position[0] // 100 - 1] != ' ' and
+                          abs((position[0] // 100 - 1) - position[0] // 100) and
+                          self.chars[position[1] // 100][position[0] // 100] == 'BP'):
+                        self.figures[position[1] // 100 + 1][position[0] // 100 - 1].hide()
+                        self.figures[position[1] // 100 + 1][position[0] // 100 - 1] = (
+                            self.figures)[position[1] // 100][position[0] // 100]
+                        self.figures[position[1] // 100][position[0] // 100].move(
+                            position[0] - 100, position[1] + 100)
+                        self.figures[position[1] // 100][position[0] // 100] = ' '
+                        self.chars[position[1] // 100][position[0] // 100] = ' '
+                        self.chars[position[1] // 100 + 1][position[0] // 100 - 1] = 'BP'
+                        self.die_already(QMovie('deaths/pawn_death.gif'))
+                    elif (self.chars[position[1] // 100 + 1][position[0] // 100 + 1] != ' ' and
+                          abs((position[0] // 100 + 1) - position[0] // 100) and
+                          self.chars[position[1] // 100][position[0] // 100] == 'BP'):
+                        self.figures[position[1] // 100 + 1][position[0] // 100 + 1].hide()
+                        self.figures[position[1] // 100 + 1][position[0] // 100 + 1] = (
+                            self.figures)[position[1] // 100][position[0] // 100]
+                        self.figures[position[1] // 100][position[0] // 100].move(
+                            position[0] + 100, position[1] + 100)
+                        self.figures[position[1] // 100][position[0] // 100] = ' '
+                        self.chars[position[1] // 100][position[0] // 100] = ' '
+                        self.chars[position[1] // 100 + 1][position[0] // 100 + 1] = 'BP'
+                        self.die_already(QMovie('deaths/pawn_death.gif'))
+                    else:
+                        position = (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                                    choice([0, 100, 200, 300, 400, 500, 600, 700]))
+                except AttributeError:
+                    position = (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                                choice([0, 100, 200, 300, 400, 500, 600, 700]))
+                    while self.chars[position[1] // 100][position[0] // 100] != 'BP':
+                        position = (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                                    choice([0, 100, 200, 300, 400, 500, 600, 700]))
+                        if self.chars[position[1] // 100][position[0] // 100] == 'BP':
                             break
-                        else:
-                            position = (choice([0, 100, 200, 300, 400, 500, 600, 700]),
-                                        choice([0, 100, 200, 300, 400, 500, 600, 700]))
-                            current = self.figures[position[1] // 100][position[0] // 100]
-                    except AttributeError:
-                        position = (choice([0, 100, 200, 300, 400, 500, 600, 700]),
-                                    choice([0, 100, 200, 300, 400, 500, 600, 700]))
-                        while self.chars[position[1] // 100][position[0] // 100] != 'BP':
-                            position = (choice([0, 100, 200, 300, 400, 500, 600, 700]),
-                                        choice([0, 100, 200, 300, 400, 500, 600, 700]))
-                            if self.chars[position[1] // 100][position[0] // 100] == 'BP':
-                                break
-                        current = self.figures[position[1] // 100][position[0] // 100]
-                    except IndexError:
-                        position = (choice([0, 100, 200, 300, 400, 500, 600, 700]),
-                                    choice([0, 100, 200, 300, 400, 500, 600, 700]))
-                        current = self.figures[position[1] // 100][position[0] // 100]
+                except IndexError:
+                    position = (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                                choice([0, 100, 200, 300, 400, 500, 600, 700]))
+
 
     def knight_move(self, color):
         if color == 'white':
-            current = self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100]
-            if (((self.first_coordinates[1] - self.second_coordinates[1] == 200 and
-                    self.second_coordinates[0] - self.first_coordinates[0] == 100) or
-                    (self.first_coordinates[1] - self.second_coordinates[1] == 200 and
-                    self.first_coordinates[0] - self.second_coordinates[0] == 100)) or
-                    (self.second_coordinates[1] - self.first_coordinates[1] == 200 and
-                    self.second_coordinates[0] - self.first_coordinates[0] == 100) or
-                    (self.second_coordinates[1] - self.first_coordinates[1] == 200 and
-                    self.first_coordinates[0] - self.second_coordinates[0] == 100)):
-                current.move(self.second_coordinates[0], self.second_coordinates[1])
-                self.chars[self.first_coordinates[1] // 100 - 1][self.first_coordinates[0] // 100] = 'WKn'
-                self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
-                self.figures[self.first_coordinates[1] // 100 - 1][self.first_coordinates[0] // 100] = current
+            if ((abs(self.second_coordinates[0] - self.first_coordinates[0]) == 100 and
+                abs(self.second_coordinates[1] - self.first_coordinates[1]) == 200) or
+                    (abs(self.second_coordinates[0] - self.first_coordinates[0]) == 200 and
+                     abs(self.second_coordinates[1] - self.first_coordinates[1]) == 100)):
+                if self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] != ' ':
+                    self.figures[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100].hide()
+                    self.die_already(QMovie('deaths/knight_death.gif'))
+                self.figures[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = (
+                    self.figures)[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100]
+                self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100].move(
+                    self.second_coordinates[0], self.second_coordinates[1])
                 self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
+                self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
+                self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = 'WKn'
+
+    def bishop_move(self, color):
+        if color == 'white':
+            if (abs(self.second_coordinates[0] - self.first_coordinates[0]) != 0 and
+                    abs(self.second_coordinates[1] - self.first_coordinates[1]) ==
+                    abs(self.second_coordinates[0] - self.first_coordinates[0])):
+                self.figures[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = (
+                    self.figures)[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100]
+                self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100].move(
+                    self.second_coordinates[0], self.second_coordinates[1])
+                self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
+                self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
+                self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = 'WB'
+
+    def rook_move(self, color):
+        if color == 'white':
+            if (self.first_coordinates[0] == self.second_coordinates[0] or
+                    self.first_coordinates[1] == self.second_coordinates[1]):
+                self.figures[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = (
+                    self.figures)[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100]
+                self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100].move(
+                    self.second_coordinates[0], self.second_coordinates[1])
+                self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
+                self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
+                self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = 'WR'
+
+    def queen_move(self, color):
+        if color == 'white':
+            if (self.first_coordinates[0] == self.second_coordinates[0] or
+                    self.first_coordinates[1] == self.second_coordinates[1] or
+                    (abs(self.second_coordinates[0] - self.first_coordinates[0]) != 0 and
+                     abs(self.second_coordinates[1] - self.first_coordinates[1]) ==
+                     abs(self.second_coordinates[0] - self.first_coordinates[0]))):
+                self.figures[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = (
+                    self.figures)[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100]
+                self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100].move(
+                    self.second_coordinates[0], self.second_coordinates[1])
+                self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
+                self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
+                self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = 'WQ'
 
     def move_figure(self):
         if self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] == 'WP':
@@ -206,11 +286,21 @@ class ChessHardGame(QMainWindow):
         elif self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] == 'WKn':
             self.knight_move('white')
             self.pawn_move('black')
-            for i in self.figures:
-                print(i)
-            print()
-            for j in self.chars:
-                print(j)
+        elif self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] == 'WB':
+            self.bishop_move('white')
+            self.pawn_move('black')
+        elif self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] == 'WR':
+            self.rook_move('white')
+            self.pawn_move('black')
+        elif self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] == 'WQ':
+            self.queen_move('white')
+            self.pawn_move('black')
+        for i in self.figures:
+            print(i)
+        print()
+        for j in self.chars:
+            print(j)
+
 
 
 mixer.music.load('london_bridge.mp3')
