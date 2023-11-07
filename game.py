@@ -109,8 +109,13 @@ class ChessHardGame(QMainWindow):
 
         self.move_button = QPushButton('Ход', self)
         self.move_button.setGeometry(QRect(200, 100, 200, 100))
-        self.move_button.move(300, 900)
+        self.move_button.move(100, 900)
         self.move_button.clicked.connect(self.move_figure)
+
+        self.reset_button = QPushButton('Сброс позиции', self)
+        self.reset_button.setGeometry(QRect(200, 100, 200, 100))
+        self.reset_button.move(500, 900)
+        self.reset_button.clicked.connect(self.reset_move)
 
         self.setWindowTitle('Это твои последние шахматы...')
         self.setWindowIcon(QIcon('game_icon.ico'))
@@ -173,7 +178,8 @@ class ChessHardGame(QMainWindow):
             while True:
                 try:
                     if (self.chars[position[1] // 100 + 1][position[0] // 100] == ' ' and
-                            self.chars[position[1] // 100][position[0] // 100] == 'BP'):
+                            self.chars[position[1] // 100][position[0] // 100] == 'BP' and
+                            'W' not in self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100]):
                         self.figures[position[1] // 100 + 1][position[0] // 100] = (
                             self.figures)[position[1] // 100][position[0] // 100]
                         self.figures[position[1] // 100][position[0] // 100].move(
@@ -184,7 +190,8 @@ class ChessHardGame(QMainWindow):
                         break
                     elif (self.chars[position[1] // 100 + 1][position[0] // 100 - 1] != ' ' and
                           abs((position[0] // 100 - 1) - position[0] // 100) and
-                          self.chars[position[1] // 100][position[0] // 100] == 'BP'):
+                          self.chars[position[1] // 100][position[0] // 100] == 'BP' and 'B' not in
+                          self.chars[position[1] // 100 + 1][position[0] // 100 - 1]):
                         self.figures[position[1] // 100 + 1][position[0] // 100 - 1].hide()
                         self.figures[position[1] // 100 + 1][position[0] // 100 - 1] = (
                             self.figures)[position[1] // 100][position[0] // 100]
@@ -194,9 +201,11 @@ class ChessHardGame(QMainWindow):
                         self.chars[position[1] // 100][position[0] // 100] = ' '
                         self.chars[position[1] // 100 + 1][position[0] // 100 - 1] = 'BP'
                         self.die_already(QMovie('deaths/pawn_death.gif'))
+                        break
                     elif (self.chars[position[1] // 100 + 1][position[0] // 100 + 1] != ' ' and
                           abs((position[0] // 100 + 1) - position[0] // 100) and
-                          self.chars[position[1] // 100][position[0] // 100] == 'BP'):
+                          self.chars[position[1] // 100][position[0] // 100] == 'BP' and 'B' not in
+                          self.chars[position[1] // 100 + 1][position[0] // 100 + 1]):
                         self.figures[position[1] // 100 + 1][position[0] // 100 + 1].hide()
                         self.figures[position[1] // 100 + 1][position[0] // 100 + 1] = (
                             self.figures)[position[1] // 100][position[0] // 100]
@@ -206,6 +215,7 @@ class ChessHardGame(QMainWindow):
                         self.chars[position[1] // 100][position[0] // 100] = ' '
                         self.chars[position[1] // 100 + 1][position[0] // 100 + 1] = 'BP'
                         self.die_already(QMovie('deaths/pawn_death.gif'))
+                        break
                     else:
                         position = (choice([0, 100, 200, 300, 400, 500, 600, 700]),
                                     choice([0, 100, 200, 300, 400, 500, 600, 700]))
@@ -228,7 +238,8 @@ class ChessHardGame(QMainWindow):
                 abs(self.second_coordinates[1] - self.first_coordinates[1]) == 200) or
                     (abs(self.second_coordinates[0] - self.first_coordinates[0]) == 200 and
                      abs(self.second_coordinates[1] - self.first_coordinates[1]) == 100)):
-                if self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] != ' ':
+                if (self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] != ' ' and
+                        'W' not in self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100]):
                     self.figures[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100].hide()
                     self.die_already(QMovie('deaths/knight_death.gif'))
                 self.figures[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = (
@@ -238,6 +249,63 @@ class ChessHardGame(QMainWindow):
                 self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
                 self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
                 self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = 'WKn'
+        elif color == 'black':
+            position1, position2 = (
+                (choice([0, 100, 200, 300, 400, 500, 600, 700]), choice([0, 100, 200, 300, 400, 500, 600, 700])),
+                (choice([0, 100, 200, 300, 400, 500, 600, 700]), choice([0, 100, 200, 300, 400, 500, 600, 700])))
+            while True:
+                try:
+                    if 'B' in self.chars[position2[1] // 100][position1[0] // 100]:
+                        position1, position2 = (
+                            (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                                choice([0, 100, 200, 300, 400, 500, 600, 700])),
+                            (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                                choice([0, 100, 200, 300, 400, 500, 600, 700])))
+                        continue
+                    else:
+                        if ((((abs(position2[0] - position1[0]) == 100 and abs(position2[1] - position1[1]) == 200) or
+                                (abs(position2[0] - position1[0]) == 200 and abs(position2[1] - position1[1]) == 100)))
+                                and
+                                (self.chars[position1[1] // 100][position1[0] // 100] == 'BKn') and ('B' not in
+                                self.chars[position2[1] // 100][position1[0] // 100])):
+                            if (self.chars[position2[1] // 100][position1[0] // 100] != ' ' and 'W' in
+                                    self.chars[position2[1] // 100][position1[0] // 100]):
+                                self.figures[position2[1] // 100][position2[0] // 100].hide()
+                                self.die_already(QMovie('deaths/knight_death.gif'))
+                            self.figures[position2[1] // 100][position2[0] // 100] = (
+                                self.figures)[position1[1] // 100][position1[0] // 100]
+                            self.figures[position1[1] // 100][position1[0] // 100].move(
+                                position2[0], position2[1])
+                            self.figures[position1[1] // 100][position1[0] // 100] = ' '
+                            self.chars[position1[1] // 100][position1[0] // 100] = ' '
+                            self.chars[position2[1] // 100][position2[0] // 100] = 'BKn'
+                            break
+                        else:
+                            position1, position2 = (
+                                (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                                 choice([0, 100, 200, 300, 400, 500, 600, 700])),
+                                (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                                 choice([0, 100, 200, 300, 400, 500, 600, 700])))
+                except AttributeError:
+                    position1, position2 = (
+                        (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                         choice([0, 100, 200, 300, 400, 500, 600, 700])),
+                        (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                         choice([0, 100, 200, 300, 400, 500, 600, 700])))
+                    while self.chars[position1[1] // 100][position1[0] // 100] != 'BKn':
+                        position1, position2 = (
+                            (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                             choice([0, 100, 200, 300, 400, 500, 600, 700])),
+                            (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                             choice([0, 100, 200, 300, 400, 500, 600, 700])))
+                        if self.chars[position1[1] // 100][position1[0] // 100] == 'BKn':
+                            break
+                except IndexError:
+                    position1, position2 = (
+                        (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                         choice([0, 100, 200, 300, 400, 500, 600, 700])),
+                        (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                         choice([0, 100, 200, 300, 400, 500, 600, 700])))
 
     def bishop_move(self, color):
         if color == 'white':
@@ -271,6 +339,10 @@ class ChessHardGame(QMainWindow):
                     (abs(self.second_coordinates[0] - self.first_coordinates[0]) != 0 and
                      abs(self.second_coordinates[1] - self.first_coordinates[1]) ==
                      abs(self.second_coordinates[0] - self.first_coordinates[0]))):
+                if (self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] != ' ' and
+                        'W' not in self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100]):
+                    self.figures[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100].hide()
+                    self.die_already(QMovie('deaths/queen_death.gif'))
                 self.figures[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = (
                     self.figures)[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100]
                 self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100].move(
@@ -278,34 +350,83 @@ class ChessHardGame(QMainWindow):
                 self.figures[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
                 self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] = ' '
                 self.chars[self.second_coordinates[1] // 100][self.second_coordinates[0] // 100] = 'WQ'
-
+        elif color == 'black':
+            position1, position2 = (
+                (choice([0, 100, 200, 300, 400, 500, 600, 700]), choice([0, 100, 200, 300, 400, 500, 600, 700])),
+                (choice([0, 100, 200, 300, 400, 500, 600, 700]), choice([0, 100, 200, 300, 400, 500, 600, 700])))
+            while True:
+                try:
+                    if 'B' in self.chars[position2[1] // 100][position1[0] // 100]:
+                        position1, position2 = (
+                            (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                                choice([0, 100, 200, 300, 400, 500, 600, 700])),
+                            (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                                choice([0, 100, 200, 300, 400, 500, 600, 700])))
+                        continue
+                    else:
+                        if (((abs(position2[0] - position1[0]) != 0 and
+                                abs(position2[1] - position1[1]) ==
+                                abs(position2[0] - position1[0])) or position1[0] == position2[0] or
+                                position1[1] == position2[1]) and
+                                self.chars[position1[1] // 100][position1[0] // 100] == 'BQ'):
+                            if self.chars[position2[1] // 100][position1[0] // 100] != ' ':
+                                self.figures[position2[1] // 100][position2[0] // 100].hide()
+                                self.die_already(QMovie('deaths/queen_death.gif'))
+                            self.figures[position2[1] // 100][position2[0] // 100] = (
+                                self.figures)[position1[1] // 100][position1[0] // 100]
+                            self.figures[position1[1] // 100][position1[0] // 100].move(
+                                position2[0], position2[1])
+                            self.figures[position1[1] // 100][position1[0] // 100] = ' '
+                            self.chars[position1[1] // 100][position1[0] // 100] = ' '
+                            self.chars[position2[1] // 100][position2[0] // 100] = 'BQ'
+                            break
+                        else:
+                            position1, position2 = (
+                                (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                                    choice([0, 100, 200, 300, 400, 500, 600, 700])),
+                                (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                                    choice([0, 100, 200, 300, 400, 500, 600, 700])))
+                except AttributeError:
+                    position1, position2 = (
+                        (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                         choice([0, 100, 200, 300, 400, 500, 600, 700])),
+                        (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                         choice([0, 100, 200, 300, 400, 500, 600, 700])))
+                    while self.chars[position1[1] // 100][position1[0] // 100] != 'BQ':
+                        position1, position2 = (
+                            (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                             choice([0, 100, 200, 300, 400, 500, 600, 700])),
+                            (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                             choice([0, 100, 200, 300, 400, 500, 600, 700])))
+                        if self.chars[position1[1] // 100][position1[0] // 100] == 'BQ':
+                            break
+                except IndexError:
+                    position1, position2 = (
+                        (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                         choice([0, 100, 200, 300, 400, 500, 600, 700])),
+                        (choice([0, 100, 200, 300, 400, 500, 600, 700]),
+                         choice([0, 100, 200, 300, 400, 500, 600, 700])))
     def move_figure(self):
         if self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] == 'WP':
             self.pawn_move('white')
-            self.pawn_move('black')
         elif self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] == 'WKn':
             self.knight_move('white')
-            self.pawn_move('black')
         elif self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] == 'WB':
             self.bishop_move('white')
-            self.pawn_move('black')
         elif self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] == 'WR':
             self.rook_move('white')
-            self.pawn_move('black')
         elif self.chars[self.first_coordinates[1] // 100][self.first_coordinates[0] // 100] == 'WQ':
             self.queen_move('white')
-            self.pawn_move('black')
+        choice([self.pawn_move, self.knight_move, self.queen_move])('black')
         for i in self.figures:
             print(i)
         print()
         for j in self.chars:
             print(j)
 
-
-
-mixer.music.load('london_bridge.mp3')
-mixer.music.play()
-
+    def reset_move(self):
+        self.first_coordinates = (0, 0)
+        self.second_coordinates = (0, 0)
 
 def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
